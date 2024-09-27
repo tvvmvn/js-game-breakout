@@ -44,8 +44,7 @@ OOP Modeling
     dx = 2;
     dy = -2;
 
-    constructor(game, stage, paddle) {
-      this.game = game;
+    constructor(stage, paddle) {
       this.stage = stage;
       this.paddle = paddle;
       this.x = stage.left + (stage.width / 2);
@@ -71,9 +70,7 @@ OOP Modeling
           && this.x - this.radius <= this.paddle.left + this.paddle.width
         ) {
           this.dy = -this.dy;
-        } else {
-          this.game.over = true;
-        }
+        } 
       }
   
       this.x += this.dx;
@@ -103,8 +100,7 @@ OOP Modeling
     brickCount = this.row_count * this.column_count;
     bricks = [];
     
-    constructor(game, stage, ball) {
-      this.game = game;
+    constructor(stage, ball) {
       this.ball = ball;
       this.left = stage.left + 20;
       this.top = stage.top + 20;
@@ -136,12 +132,8 @@ OOP Modeling
               && this.ball.y - this.ball.radius < brick.top + brick.height
             ) {
               brick.status = 0;
-              this.game.score++;
+              this.brickCount--;
               this.ball.dy = -this.ball.dy;
-  
-              if (this.game.score == this.brickCount) {
-                this.game.end = true;
-              }
             }
   
             ctx.fillStyle = brick.color;
@@ -157,8 +149,7 @@ OOP Modeling
     height = 5;
     color = "#fff";
     
-    constructor(game, stage) {
-      this.game = game;
+    constructor(stage) {
       this.stage = stage;
       this.left = stage.left + ((stage.width - 30) / 2);
       this.top = stage.top + (stage.height - 10);
@@ -179,43 +170,55 @@ OOP Modeling
       ctx.fillRect(this.left, this.top, this.width, this.height);
     }
   }
-
-  class Message {
-    message = "";
-
-    constructor(game, stage) {
-      this.game = game;
-      this.left = stage.left + (stage.width / 2);
-      this.top = stage.top + ((stage.height + 20) / 2);
-    }
-
-    render() {
-      if (this.game.over) {
-        this.message = "GAME OVER";
-      } else if (this.game.end) {
-        this.message = "YOU WIN!";
-      } 
-
-      ctx.font = "16px Monospace";
-      ctx.fillStyle = "#fff";
-      ctx.textAlign = "center";
-      ctx.fillText(this.message, this.left, this.top);
-    }
-  }
   
   class Game { // Umpire
     over = false;
     end = false;
-    score = 0;
+
+    constructor(stage, paddle, ball, brickStack) {
+      this.stage = stage;
+      this.paddle = paddle;
+      this.ball = ball;
+      this.brickStack = brickStack;
+      this.left = stage.left + (stage.width / 2);
+      this.top = stage.top + ((stage.height + 20) / 2);
+    }
+    
+    render() {
+      if (this.ball.y + this.ball.radius + 10 > this.stage.bottom) {
+        if ( 
+          this.ball.x + this.ball.radius < this.paddle.left
+          || this.ball.x - this.ball.radius > this.paddle.left + this.paddle.width
+        ) {
+          this.over = true;
+        } 
+      }
+
+      if (this.brickStack.brickCount < 1) {
+        this.end = true;
+      }
+
+      var message = "";
+
+      if (this.over) {
+        message = "GAME OVER";
+      } else if (this.end) {
+        message = "YOU WIN!";
+      }
+
+      ctx.font = "16px Monospace";
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.fillText(message, this.left, this.top);
+    }
   }
   
   /* variables */
-  var game = new Game();
   var stage = new Stage();
-  var paddle = new Paddle(game, stage);
-  var ball = new Ball(game, stage, paddle);
-  var brickStack = new BrickStack(game, stage, ball);
-  var message = new Message(game, stage);
+  var paddle = new Paddle(stage);
+  var ball = new Ball(stage, paddle);
+  var brickStack = new BrickStack(stage, ball);
+  var game = new Game(stage, paddle, ball, brickStack);
 
   /* controller */
   var leftKeyPressed = false;
@@ -248,8 +251,8 @@ OOP Modeling
     ball.render();
     brickStack.render();
     paddle.render();
-    message.render();
-    
+    game.render();
+
     if (!game.end && !game.over)
       requestAnimationFrame(main);
   }
