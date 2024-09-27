@@ -1,18 +1,13 @@
 /*
-OOP
+OOP Modeling
 
-# Paddle
-keyDownHandler()
-
-# Bricks or Brick
-drawBricks()
-
+# Stage
+# Bricks, Brick
 # Ball
-drawBall()
+# Paddle
+# Message
+# Game
 
-# Umpire (Game)
-
-# Background
 */
 
 (function () {
@@ -24,44 +19,65 @@ drawBall()
   canvas.style["backgroundColor"] = "#000";
   
   /* contants */
-  const STAGE_OFFSET_X = 10;
-  const STAGE_OFFSET_Y = 50;
-  const STAGE_WIDTH = 480;
-  const STAGE_HEIGHT = 300;
-  const OFFSET_X = STAGE_OFFSET_X + 20;
-  const OFFSET_Y = STAGE_OFFSET_Y + 20;
   const ARROW_RIGHT = "ArrowRight";
   const ARROW_LEFT = "ArrowLeft";
   
-  // Class
+  /* class */
+  class Stage {
+    OFFSET_X = 10;
+    OFFSET_Y = 50;
+    WIDTH = 480;
+    HEIGHT = 300;
+
+    render() {
+      ctx.font = "20px Monospace";
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "B R E A K O U T",
+        this.OFFSET_X + (this.WIDTH / 2),
+        30,
+      );
+  
+      ctx.beginPath();
+      ctx.lineWidth = "4";
+      ctx.strokeStyle = "#fff";
+      ctx.rect(this.OFFSET_X, this.OFFSET_Y, this.WIDTH, this.HEIGHT)
+      ctx.stroke();
+    }
+  }
+
   class Ball {
-    constructor(x, y, radius, dx, dy, color) {
-      this.x = x;
-      this.y = y;
-      this.radius = radius;
-      this.dx = dx;
-      this.dy = dy;
-      this.color = color;
+    radius = 10;
+    dx = 2;
+    dy = -2;
+    color = "#fff";
+
+    constructor(stage) {
+      this.stage = stage;
+
+      this.x = this.stage.OFFSET_X + (this.stage.WIDTH / 2);
+      this.y = this.stage.OFFSET_Y + (this.stage.HEIGHT - 30);
     }
   
     render() {
       // right
-      if (this.x + this.dx > STAGE_OFFSET_X + STAGE_WIDTH - this.radius) {
+      if (this.x + this.dx > this.stage.OFFSET_X + this.stage.WIDTH - this.radius) {
         this.dx = -this.dx;
       }
   
       // left
-      if (this.x + this.dx < STAGE_OFFSET_X + this.radius) {
+      if (this.x + this.dx < this.stage.OFFSET_X + this.radius) {
         this.dx = -this.dx;
       }
   
       // top
-      if (this.y + this.dy < STAGE_OFFSET_Y + this.radius) {
+      if (this.y + this.dy < this.stage.OFFSET_Y + this.radius) {
         this.dy = -this.dy;
       }
   
       // bottom
-      if (this.y > STAGE_OFFSET_Y + STAGE_HEIGHT - this.radius - 10) {
+      if (this.y > this.stage.OFFSET_Y + this.stage.HEIGHT - this.radius - 10) {
         if ( 
           this.x + this.radius >= paddle.x
           && this.x - this.radius <= paddle.x + paddle.width
@@ -86,14 +102,12 @@ drawBall()
   }
   
   class Brick {
-    constructor(x, y, width, height, status, color) {
-      this.x = x;
-      this.y = y;
-      this.width = width;
-      this.height = height;
-      this.status = status;
-      this.color = color;
-    }
+    x = 0;
+    y = 0;
+    width = 80;
+    height = 20;
+    status = 1;
+    color = "pink";
   }
   
   class BrickStack {
@@ -102,14 +116,20 @@ drawBall()
     COLUMN_COUNT = 5;
     bricks = [];
     brickCount = this.ROW_COUNT * this.COLUMN_COUNT;
-  
-    constructor() {
+    
+    constructor(stage, ball) {
+      this.stage = stage;
+      this.ball = ball;
+      
+      this.OFFSET_X = this.stage.OFFSET_X + 20;
+      this.OFFSET_Y = this.stage.OFFSET_Y + 20;
+
       for (var r = 0; r < this.ROW_COUNT; r++) {
         this.bricks[r] = [];
         
         for (var c = 0; c < this.COLUMN_COUNT; c++) {
-          var brick = new Brick(0, 0, 80, 20, 1, "pink");
-          
+          var brick = new Brick();
+
           this.bricks[r][c] = brick;
         }
       }
@@ -121,18 +141,18 @@ drawBall()
           var brick = this.bricks[r][c];
   
           if (brick.status == 1) {
-            brick.x = OFFSET_X + (c * (brick.width + this.PADDING));
-            brick.y = OFFSET_Y + (r * (brick.height + this.PADDING));
+            brick.x = this.OFFSET_X + (c * (brick.width + this.PADDING));
+            brick.y = this.OFFSET_Y + (r * (brick.height + this.PADDING));
   
             if (
-              ball.x + ball.radius > brick.x
-              && ball.x + ball.radius < brick.x + brick.width
-              && ball.y + ball.radius > brick.y
-              && ball.y - ball.radius < brick.y + brick.height
+              this.ball.x + this.ball.radius > brick.x
+              && this.ball.x + this.ball.radius < brick.x + brick.width
+              && this.ball.y + this.ball.radius > brick.y
+              && this.ball.y - this.ball.radius < brick.y + brick.height
             ) {
               brick.status = 0;
               game.score++;
-              ball.dy = -ball.dy;
+              this.ball.dy = -this.ball.dy;
   
               if (game.score == this.brickCount) {
                 game.end = true;
@@ -148,26 +168,29 @@ drawBall()
   }
   
   class Paddle {  
-    constructor(x, y, width, height, color) {
-      this.x = x;
-      this.y = y;
-      this.width = width;
-      this.height = height;
-      this.color = color;
-    }
+    width = 50;
+    height = 5;
+    color = "#fff";
+    
+    constructor(stage) {
+      this.stage = stage;
+
+      this.x = this.stage.OFFSET_X + ((this.stage.WIDTH - 30) / 2);
+      this.y = this.stage.OFFSET_Y + (this.stage.HEIGHT - 10);
+    } 
 
     render() {
       if (!game.end && !game.over) {
         if (
           rightKeyPressed
-          && this.x + this.width < STAGE_OFFSET_X + STAGE_WIDTH - 4
+          && this.x + this.width < this.stage.OFFSET_X + this.stage.WIDTH - 4
         ) {
           this.x += 4;
         }
     
         if (
           leftKeyPressed
-          && this.x > STAGE_OFFSET_X + 4
+          && this.x > this.stage.OFFSET_X + 4
         ) {
           this.x -= 4;
         }
@@ -177,61 +200,43 @@ drawBall()
       ctx.fillRect(this.x, this.y, this.width, this.height);
     }
   }
-  
-  class Game { // Umpire
-    constructor(over, end, score) {
-      this.over = over;
-      this.end = end;
-      this.score = score;
-    }
 
-    drawMessage(message) {
-      ctx.font = "16px Monospace";
-      ctx.fillStyle = "#fff";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        message,
-        STAGE_OFFSET_X + (STAGE_WIDTH / 2),
-        STAGE_OFFSET_Y + ((STAGE_HEIGHT + 20) / 2)
-      );
+  class Message {
+    message = "";
+
+    constructor(stage) {
+      this.stage = stage;
+      this.x = this.stage.OFFSET_X + (this.stage.WIDTH / 2);
+      this.y = this.stage.OFFSET_Y + ((this.stage.HEIGHT + 20) / 2);
     }
 
     render() {
-      ctx.font = "20px Monospace";
+      if (game.over) {
+        this.message = "GAME OVER";
+      } else if (game.end) {
+        this.message = "YOU WIN!";
+      } 
+
+      ctx.font = "16px Monospace";
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
-      ctx.fillText(
-        "B R E A K O U T",
-        STAGE_OFFSET_X + (STAGE_WIDTH / 2),
-        30,
-      );
-  
-      ctx.beginPath();
-      ctx.lineWidth = "4";
-      ctx.strokeStyle = "#fff";
-      ctx.rect(STAGE_OFFSET_X, STAGE_OFFSET_Y, STAGE_WIDTH, STAGE_HEIGHT)
-      ctx.stroke();
+      ctx.fillText(this.message, this.x, this.y);
     }
   }
   
+  class Game { // Umpire
+    over = false;
+    end = false;
+    score = 0;
+  }
+  
   /* variables */
-  var ball = new Ball(
-    STAGE_OFFSET_X + (STAGE_WIDTH / 2),
-    STAGE_OFFSET_Y + (STAGE_HEIGHT - 30),
-    10,
-    2,
-    -2,
-    "#fff"
-  );
-  var brickStack = new BrickStack();
-  var paddle = new Paddle(
-    STAGE_OFFSET_X + ((STAGE_WIDTH - 30) / 2),
-    STAGE_OFFSET_Y + (STAGE_HEIGHT - 10),
-    50,
-    5,
-    "#fff"
-  );
-  var game = new Game(false, false, 0);
+  var stage = new Stage();
+  var ball = new Ball(stage);
+  var brickStack = new BrickStack(stage, ball);
+  var paddle = new Paddle(stage);
+  var message = new Message(stage);
+  var game = new Game();
 
   /* controller */
   var leftKeyPressed = false;
@@ -260,18 +265,11 @@ drawBall()
   /* run the game */
   function main() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    game.render();
+    stage.render();
     ball.render();
     brickStack.render();
     paddle.render();
-
-    if (game.over) {
-      game.drawMessage("GAME OVER");
-    }
-    
-    if (game.end) {
-      game.drawMessage("YOU WIN!");
-    }  
+    message.render();
   }
 
   setInterval(main, 10);
