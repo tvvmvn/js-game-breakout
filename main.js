@@ -7,7 +7,6 @@ OOP Modeling
 # Paddle
 # Message
 # Game
-
 */
 
 (function () {
@@ -23,16 +22,18 @@ OOP Modeling
   
   /* class */
   class Stage {
-    offset_x = 10;
-    offset_y = 10;
     width = 480;
     height = 300;
+    top = 10;
+    left = 10;
+    right = this.left + this.width;
+    bottom = this.top + this.height;
     color = "#111";
 
     render() {  
       ctx.beginPath();
       ctx.fillStyle = this.color;
-      ctx.fillRect(this.offset_x, this.offset_y, this.width, this.height)
+      ctx.fillRect(this.left, this.top, this.width, this.height)
       ctx.stroke();
     }
   }
@@ -42,39 +43,32 @@ OOP Modeling
     dx = 2;
     dy = -2;
     color = "#fff";
-    rightMost;
-    leftMost;
 
     constructor(game, stage, paddle) {
       this.game = game;
-      this.x = stage.offset_x + (stage.width / 2);
-      this.y = stage.offset_y + (stage.height - 30);
-      this.leftWall = stage.offset_x;
-      this.rightWall = stage.offset_x + stage.width;
-      this.ceiling = stage.offset_y;
-      this.bottom = stage.offset_y + stage.height;
+      this.stage = stage;
+      this.paddle = paddle;
+      this.x = stage.left + (stage.width / 2);
+      this.y = stage.bottom - 30;
     }
     
     render() {
-      var leftMost = paddle.x;
-      var rightMost = paddle.x + paddle.width;
-
-      if (this.x + this.radius > this.rightWall) {
+      if (this.x + this.radius > this.stage.right) {
         this.dx = -this.dx;
       }
   
-      if (this.x - this.radius < this.leftWall) {
+      if (this.x - this.radius < this.stage.left) {
         this.dx = -this.dx;
       }
   
-      if (this.y - this.radius < this.ceiling) {
+      if (this.y - this.radius < this.stage.top) {
         this.dy = -this.dy;
       }
   
-      if (this.y + this.radius + 10 > this.bottom) {
+      if (this.y + this.radius + 10 > this.stage.bottom) {
         if ( 
-          this.x + this.radius >= leftMost
-          && this.x - this.radius <= rightMost
+          this.x + this.radius >= this.paddle.left
+          && this.x - this.radius <= this.paddle.left + this.paddle.width
         ) {
           this.dy = -this.dy;
         } else {
@@ -96,10 +90,10 @@ OOP Modeling
   }
   
   class Brick {
-    x = 0;
-    y = 0;
     width = 80;
     height = 20;
+    left = 0;
+    top = 0;
     status = 1;
     color = "pink";
   }
@@ -114,8 +108,8 @@ OOP Modeling
     constructor(game, stage, ball) {
       this.game = game;
       this.ball = ball;
-      this.offset_x = stage.offset_x + 20;
-      this.offset_y = stage.offset_y + 20;
+      this.left = stage.left + 20;
+      this.top = stage.top + 20;
 
       for (var r = 0; r < this.row_count; r++) {
         this.bricks[r] = [];
@@ -134,14 +128,14 @@ OOP Modeling
           var brick = this.bricks[r][c];
   
           if (brick.status == 1) {
-            brick.x = this.offset_x + (c * (brick.width + this.padding));
-            brick.y = this.offset_y + (r * (brick.height + this.padding));
+            brick.left = this.left + (c * (brick.width + this.padding));
+            brick.top = this.top + (r * (brick.height + this.padding));
   
             if (
-              this.ball.x + this.ball.radius > brick.x
-              && this.ball.x + this.ball.radius < brick.x + brick.width
-              && this.ball.y + this.ball.radius > brick.y
-              && this.ball.y - this.ball.radius < brick.y + brick.height
+              this.ball.x + this.ball.radius > brick.left
+              && this.ball.x + this.ball.radius < brick.left + brick.width
+              && this.ball.y + this.ball.radius > brick.top
+              && this.ball.y - this.ball.radius < brick.top + brick.height
             ) {
               brick.status = 0;
               this.game.score++;
@@ -153,7 +147,7 @@ OOP Modeling
             }
   
             ctx.fillStyle = brick.color;
-            ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+            ctx.fillRect(brick.left, brick.top, brick.width, brick.height);
           }
         }
       }
@@ -167,27 +161,26 @@ OOP Modeling
     
     constructor(game, stage) {
       this.game = game;
-      this.x = stage.offset_x + ((stage.width - 30) / 2);
-      this.y = stage.offset_y + (stage.height - 10);
-      this.leftWall = stage.offset_x + 4;
-      this.rightWall = stage.offset_x + stage.width - 4;
+      this.stage = stage;
+      this.left = stage.left + ((stage.width - 30) / 2);
+      this.top = stage.top + (stage.height - 10);
     } 
     
     render() {
-      var rightMost = this.x + this.width;
+      var right = this.left + this.width;
 
       if (!this.game.end && !this.game.over) {
-        if (leftKeyPressed && this.x > this.leftWall) {
-          this.x -= 4;
+        if (leftKeyPressed && this.left > this.stage.left) {
+          this.left -= 4;
         }
 
-        if (rightKeyPressed && rightMost < this.rightWall) {
-          this.x += 4;
+        if (rightKeyPressed && right < this.stage.right) {
+          this.left += 4;
         }
       }
   
       ctx.fillStyle = this.color;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.fillRect(this.left, this.top, this.width, this.height);
     }
   }
 
@@ -196,8 +189,8 @@ OOP Modeling
 
     constructor(game, stage) {
       this.game = game;
-      this.x = stage.offset_x + (stage.width / 2);
-      this.y = stage.offset_y + ((stage.height + 20) / 2);
+      this.left = stage.left + (stage.width / 2);
+      this.top = stage.top + ((stage.height + 20) / 2);
     }
 
     render() {
@@ -210,7 +203,7 @@ OOP Modeling
       ctx.font = "16px Monospace";
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
-      ctx.fillText(this.message, this.x, this.y);
+      ctx.fillText(this.message, this.left, this.top);
     }
   }
   
