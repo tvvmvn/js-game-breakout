@@ -40,9 +40,9 @@ OOP Modeling
 
   class Ball {
     radius = 10;
+    color = "#fff";
     dx = 2;
     dy = -2;
-    color = "#fff";
 
     constructor(game, stage, paddle) {
       this.game = game;
@@ -76,10 +76,8 @@ OOP Modeling
         }
       }
   
-      if (!this.game.end && !this.game.over) {
-        this.x += this.dx;
-        this.y += this.dy;
-      }
+      this.x += this.dx;
+      this.y += this.dy;
   
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -169,14 +167,12 @@ OOP Modeling
     render() {
       var right = this.left + this.width;
 
-      if (!this.game.end && !this.game.over) {
-        if (leftKeyPressed && this.left > this.stage.left) {
-          this.left -= 4;
-        }
+      if (leftKeyPressed && this.left > this.stage.left) {
+        this.left -= 4;
+      }
 
-        if (rightKeyPressed && right < this.stage.right) {
-          this.left += 4;
-        }
+      if (rightKeyPressed && right < this.stage.right) {
+        this.left += 4;
       }
   
       ctx.fillStyle = this.color;
@@ -253,7 +249,10 @@ OOP Modeling
     brickStack.render();
     paddle.render();
     message.render();
+    
+    if (!game.end && !game.over)
+      requestAnimationFrame(main);
   }
 
-  setInterval(main, 10);
+  main();
 })();  
