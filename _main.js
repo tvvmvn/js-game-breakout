@@ -215,19 +215,19 @@
   }
 
   function drawPaddle() {
-    if (!game.end && !game.over) {
-      if (
-        rightKeyPressed
-        && paddle.x + paddle.width < STAGE_OFFSET_X + STAGE_WIDTH - 4
-      ) {
-        paddle.x += 4;
-      }
-  
+    if (!game.end && !game.over) {      
       if (
         leftKeyPressed
         && paddle.x > STAGE_OFFSET_X + 4
       ) {
         paddle.x -= 4;
+      }
+      
+      if (
+        rightKeyPressed
+        && paddle.x + paddle.width < STAGE_OFFSET_X + STAGE_WIDTH - 4
+      ) {
+        paddle.x += 4;
       }
     }
 
