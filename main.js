@@ -198,8 +198,8 @@ OOP Modeling
       this.brickStack = brickStack;
       this.paddle = paddle;
     }
-    
-    render() {
+
+    setOver() {
       if (this.ball.bottom + 10 > this.stage.bottom) {
         if ( 
           this.ball.right < this.paddle.left
@@ -208,10 +208,17 @@ OOP Modeling
           this.over = true;
         } 
       }
+    }
 
+    setEnd() {
       if (this.brickStack.brickCount < 1) {
         this.end = true;
       }
+    }
+    
+    render() {
+      this.setOver();
+      this.setEnd();
 
       var message = "";
 
