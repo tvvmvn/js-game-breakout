@@ -1,59 +1,29 @@
-/*
-OOP Modeling
-
-# Stage
-# Bricks, Brick
-# Ball
-# Paddle
-# Message
-# Game
-*/
-
 (function () {
   /* canvas */
   var canvas = document.getElementById("canvas");
   var ctx = canvas.getContext("2d");
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
-  
+  canvas.width = 500;
+  canvas.height = 350;
+  canvas.style.backgroundColor = "#000";
   /* contants */
   const ARROW_RIGHT = "ArrowRight";
   const ARROW_LEFT = "ArrowLeft";
   
   /* class */
-  class Stage {
-    constructor() {
-      this.width = 480;
-      this.height = 300;
-      this.top = 10;
-      this.left = 10;
-      this.right = this.left + this.width;
-      this.bottom = this.top + this.height;
-      this.color = "#111";
-    }
-
-    render() {  
-      ctx.beginPath();
-      ctx.fillStyle = this.color;
-      ctx.fillRect(this.left, this.top, this.width, this.height)
-      ctx.stroke();
-    }
-  }
-
   class Ball {
-    constructor(stage, paddle) {
-      this.x = stage.left + (stage.width / 2);
-      this.y = stage.bottom - 30;
+    constructor(paddle) {
+      this.x = canvas.width / 2;
+      this.y = canvas.height - 30;
       this.radius = 10;
       this.top = 0;
       this.left = 0;
       this.right = 0;
       this.bottom = 0;
       this.color = "#fff";
-      this.dx = 2;
-      this.dy = -2;
-      this.stage = stage;
+      this.dx = 3;
+      this.dy = -3;
       this.paddle = paddle;
+      this.outOfPaddle = false;
     }
     
     render() {
@@ -62,25 +32,24 @@ OOP Modeling
       this.top = this.y - this.radius;
       this.bottom = this.y + this.radius;
 
-      if (this.right > this.stage.right) {
+      if (this.right > canvas.width) {
         this.dx = -this.dx;
       }
   
-      if (this.left < this.stage.left) {
+      if (this.left < 0) {
         this.dx = -this.dx;
       }
   
-      if (this.top < this.stage.top) {
+      if (this.top < 0) {
         this.dy = -this.dy;
       }
   
-      if (this.bottom + 10 > this.stage.bottom) {
-        if (
-          this.right >= this.paddle.left 
-          && this.left <= this.paddle.right
-        ) {
+      if (this.bottom > canvas.height - this.paddle.height) {
+        if (this.right >= this.paddle.left && this.left <= this.paddle.right) {
           this.dy = -this.dy;
-        } 
+        } else {
+          this.outOfPaddle = true;
+        }
       }
   
       this.x += this.dx;
@@ -108,11 +77,11 @@ OOP Modeling
   }
   
   class BrickStack {
-    constructor(stage, ball) {
-      this.row_count = 5;
+    constructor(ball) {
+      this.row_count = 6;
       this.column_count = 5;
-      this.top = stage.top + 20;
-      this.left = stage.left + 20;
+      this.top = 30;
+      this.left = 30;
       this.padding = 10;
       this.brickCount = this.row_count * this.column_count;
       this.bricks = [];
@@ -160,24 +129,22 @@ OOP Modeling
   }
   
   class Paddle {  
-    constructor(stage) {
-      this.width = 50;
-      this.height = 5;
-      this.top = stage.top + (stage.height - 10);
-      this.left = stage.left + ((stage.width - 30) / 2);
+    constructor() {
+      this.width = 80;
+      this.height = 10;
+      this.top = canvas.height - this.height;
+      this.left = (canvas.width - 30) / 2;
       this.right = this.left + this.width;
-      this.color = "#fff";
-      this.stage = stage;
+      this.color = "#ddd";
     } 
     
     render() {
-      
-      if (leftKeyPressed && this.left > this.stage.left) {
-        this.left -= 4;
+      if (leftKeyPressed && this.left > 0) {
+        this.left -= 5;
       }
       
-      if (rightKeyPressed && this.right < this.stage.right) {
-        this.left += 4;
+      if (rightKeyPressed && this.right < canvas.width) {
+        this.left += 5;
       }
 
       this.right = this.left + this.width;
@@ -188,25 +155,19 @@ OOP Modeling
   }
   
   class Game { // Umpire
-    constructor(stage, paddle, ball, brickStack) {
+    constructor(paddle, ball, brickStack) {
       this.over = false;
       this.end = false;
-      this.top = stage.top + ((stage.height + 20) / 2);
-      this.left = stage.left + (stage.width / 2);
-      this.stage = stage;
+      this.top = (canvas.height + 20) / 2;
+      this.left = canvas.width / 2;
       this.ball = ball;
       this.brickStack = brickStack;
       this.paddle = paddle;
     }
 
     setOver() {
-      if (this.ball.bottom + 10 > this.stage.bottom) {
-        if ( 
-          this.ball.right < this.paddle.left
-          || this.ball.left > this.paddle.right
-        ) {
-          this.over = true;
-        } 
+      if (this.ball.outOfPaddle) {
+        this.over = true;
       }
     }
 
@@ -236,11 +197,10 @@ OOP Modeling
   }
   
   /* variables */
-  var stage = new Stage();
-  var paddle = new Paddle(stage);
-  var ball = new Ball(stage, paddle);
-  var brickStack = new BrickStack(stage, ball);
-  var game = new Game(stage, paddle, ball, brickStack);
+  var paddle = new Paddle();
+  var ball = new Ball(paddle);
+  var brickStack = new BrickStack(ball);
+  var game = new Game(paddle, ball, brickStack);
 
   /* controller */
   var leftKeyPressed = false;
@@ -269,7 +229,6 @@ OOP Modeling
   /* run the game */
   function main() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    stage.render();
     ball.render();
     brickStack.render();
     paddle.render();
