@@ -5,9 +5,6 @@
   canvas.width = 500;
   canvas.height = 350;
   canvas.style.backgroundColor = "#000";
-  /* contants */
-  const ARROW_RIGHT = "ArrowRight";
-  const ARROW_LEFT = "ArrowLeft";
   
   /* class */
   class Ball {
@@ -64,66 +61,36 @@
   }
   
   class Brick {
-    constructor() {
+    constructor(ball, x, y) {
+      this.offsetX = 30;
+      this.offsetY = 30;
       this.width = 80;
       this.height = 20;
-      this.top = 0;
-      this.left = 0;
-      this.right = 0;
-      this.bottom = 0;
-      this.status = 1;
-      this.color = "pink";
-    }
-  }
-  
-  class BrickStack {
-    constructor(ball) {
-      this.row_count = 6;
-      this.column_count = 5;
-      this.top = 30;
-      this.left = 30;
       this.padding = 10;
-      this.brickCount = this.row_count * this.column_count;
-      this.bricks = [];
+      this.left = this.offsetX + (x * (this.width + this.padding));
+      this.top = this.offsetY + (y * (this.height + this.padding));
+      this.right =  this.left + this.width;
+      this.bottom = this.top + this.height;
+      this.active = true;
+      this.color = "pink";
       this.ball = ball;
-
-      // initializing bricks
-      for (var r = 0; r < this.row_count; r++) {
-        this.bricks[r] = [];
-        
-        for (var c = 0; c < this.column_count; c++) {
-          var brick = new Brick();
-          brick.left = this.left + (c * (brick.width + this.padding));
-          brick.top = this.top + (r * (brick.height + this.padding));
-          brick.right = brick.left + brick.width;
-          brick.bottom = brick.top + brick.height;
-
-          this.bricks[r][c] = brick;
-        }
-      }
     }
-  
+
     render() {
-      for (var r = 0; r < this.row_count; r++) {
-        for (var c = 0; c < this.column_count; c++) {
-          var brick = this.bricks[r][c];
-  
-          if (brick.status == 1) {
-            if (
-              this.ball.right > brick.left
-              && this.ball.left < brick.right
-              && this.ball.bottom > brick.top
-              && this.ball.top < brick.bottom
-            ) {
-              brick.status = 0;
-              this.brickCount--;
-              this.ball.dy = -this.ball.dy;
-            }
-  
-            ctx.fillStyle = brick.color;
-            ctx.fillRect(brick.left, brick.top, brick.width, brick.height);
-          }
+      if (this.active) {
+        if (this.ball.right > this.left
+          && this.ball.left < this.right
+          && this.ball.bottom > this.top
+          && this.ball.top < this.bottom
+        ) {
+          // collision
+          this.active = false;
+          this.ball.dy = -this.ball.dy;
+          brickCount--;
         }
+
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.left, this.top, this.width, this.height);
       }
     }
   }
@@ -155,13 +122,12 @@
   }
   
   class Game { // Umpire
-    constructor(paddle, ball, brickStack) {
+    constructor(paddle, ball) {
       this.over = false;
       this.end = false;
       this.top = (canvas.height + 20) / 2;
       this.left = canvas.width / 2;
       this.ball = ball;
-      this.brickStack = brickStack;
       this.paddle = paddle;
     }
 
@@ -172,7 +138,7 @@
     }
 
     setEnd() {
-      if (this.brickStack.brickCount < 1) {
+      if (brickCount < 1) {
         this.end = true;
       }
     }
@@ -197,40 +163,31 @@
   }
   
   /* variables */
+  var rowCount = 5;
+  var colCount = 5;
+  var brickCount = rowCount * colCount;
+  var bricks = [];
   var paddle = new Paddle();
   var ball = new Ball(paddle);
-  var brickStack = new BrickStack(ball);
-  var game = new Game(paddle, ball, brickStack);
+  var game = new Game(paddle, ball);
 
-  /* controller */
-  var leftKeyPressed = false;
-  var rightKeyPressed = false;
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key == ARROW_RIGHT) {
-      rightKeyPressed = true;
+  for (var r = 0; r < rowCount; r++) {
+    bricks[r] = [];
+    for (var c = 0; c < colCount; c++) {
+      bricks[r][c] = new Brick(ball, r, c);
     }
-
-    if (e.key == ARROW_LEFT) {
-      leftKeyPressed = true;
-    }
-  });
-
-  document.addEventListener("keyup", function (e) {
-    if (e.key == ARROW_RIGHT) {
-      rightKeyPressed = false;
-    }
-
-    if (e.key == ARROW_LEFT) {
-      leftKeyPressed = false;
-    }
-  });
+  }
 
   /* run the game */
   function main() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ball.render();
-    brickStack.render();
+    // bricks 
+    for (var r = 0; r < rowCount; r++) {
+      for (var c = 0; c < colCount; c++) {
+        bricks[r][c].render();
+      }
+    }
     paddle.render();
     game.render();
 
@@ -239,4 +196,28 @@
   }
 
   main();
+
+  /* controller */
+  var leftKeyPressed = false;
+  var rightKeyPressed = false;
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key == "ArrowRight") {
+      rightKeyPressed = true;
+    }
+
+    if (e.key == "ArrowLeft") {
+      leftKeyPressed = true;
+    }
+  });
+
+  document.addEventListener("keyup", function (e) {
+    if (e.key == "ArrowRight") {
+      rightKeyPressed = false;
+    }
+
+    if (e.key == "ArrowLeft") {
+      leftKeyPressed = false;
+    }
+  });
 })();  
