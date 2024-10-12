@@ -3,138 +3,191 @@ canvas.width = 500;
 canvas.height = 300;
 var ctx = canvas.getContext("2d");
 
-class Game {
-  ballRadius = 10;
+class Ball {
+  radius = 10;
   x = canvas.width / 2;
   y = canvas.height - 30;
-  dx = 2;
-  dy = -2;
-  paddleHeight = 7.5;
-  paddleWidth = 80;
-  paddleX = (canvas.width - this.paddleWidth) / 2;
-  brickRowCount = 4;
-  brickColumnCount = 5;
-  brickWidth = 80;
-  brickHeight = 20;
-  brickPadding = 10;
-  brickOffsetTop = 30;
-  brickOffsetLeft = 30;
+  left = 0;
+  right = 0;
+  top = 0;
+  bottom = 0;
+  dx = 3;
+  dy = -3;
+  color = "#f1f1f1";
+  outOfPaddle = false;
+  
+  render(paddleLeft, paddleRight) {
+    this.left = this.x - this.radius;
+    this.right = this.x + this.radius;
+    this.top = this.y - this.radius;
+    this.bottom = this.y + this.radius;
+
+    if (this.left < 0 || this.right > canvas.width) {
+      this.dx = -this.dx;
+    }
+  
+    if (this.top < 0) {
+      this.dy = -this.dy;
+    } 
+    
+    if (this.bottom > canvas.height) {
+      if (this.left < paddleRight && this.right > paddleLeft) {
+        this.dy = -this.dy;
+      } else {
+        this.outOfPaddle = true;
+      }
+    }
+  
+    this.x += this.dx;
+    this.y += this.dy;
+
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.closePath();
+  }
+}
+
+class Paddle {
+  height = 7.5;
+  width = 80;
+  x = (canvas.width - this.width) / 2;
+  color = "#ddd";
+
+  render(leftPressed, rightPressed) {
+    if (rightPressed && this.x < canvas.width - this.width) {
+      this.x += 7;
+    } else if (leftPressed && this.x > 0) {
+      this.x -= 7;
+    }
+
+    ctx.beginPath();
+    ctx.rect(this.x, canvas.height - this.height, this.width, this.height);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.closePath();
+  }
+}
+
+class Brick {
+  x = 0;
+  y = 0;
+  width = 80;
+  height = 20;
+  color = "pink";
+  padding = 10;
+  active = 1;
+}
+
+class WallOfBricks {
+  offsetTop = 30;
+  offsetLeft = 30;
+  rowCount = 4;
+  columnCount = 5;
   bricks = [];
-  over = false;
-  backgroundColor = "#000";
-  ballColor = "#f1f1f1";
-  paddleColor = "#ddd";
-  bricksColor = "pink";
-  textColor = "red";
-  rightPressed = false;
-  leftPressed = false;
+  brickCount = this.rowCount * this.columnCount;
+  collision = false;
 
   constructor() {
-    for (var r = 0; r < this.brickRowCount; r++) {
+    for (var r = 0; r < this.rowCount; r++) {
       this.bricks[r] = [];
 
-      for (var c = 0; c < this.brickColumnCount; c++) {
-        this.bricks[r][c] = { x: 0, y: 0, status: 1 };
+      for (var c = 0; c < this.columnCount; c++) {
+        this.bricks[r][c] = new Brick();
       }
     }
   }
-  
-  drawBall() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.ballRadius, 0, Math.PI * 2);
-    ctx.fillStyle = this.ballColor;
-    ctx.fill();
-    ctx.closePath();
-  }
-  
-  drawPaddle() {
-    ctx.beginPath();
-    ctx.rect(this.paddleX, canvas.height - this.paddleHeight, this.paddleWidth, this.paddleHeight);
-    ctx.fillStyle = this.paddleColor;
-    ctx.fill();
-    ctx.closePath();
-  }
-  
-  drawBricks() {
-    for (var r = 0; r < this.brickRowCount; r++) {
-      for (var c = 0; c < this.brickColumnCount; c++) {
+
+  render(ballLeft, ballRight, ballTop, ballBottom) {
+    for (var r = 0; r < this.rowCount; r++) {
+      for (var c = 0; c < this.columnCount; c++) {
         var brick = this.bricks[r][c];
 
-        if (brick.status == 1) {
-          brick.x = (c * (this.brickWidth + this.brickPadding)) + this.brickOffsetLeft;
-          brick.y = (r * (this.brickHeight + this.brickPadding)) + this.brickOffsetTop;
+        if (brick.active == 1) {
+          brick.x = (c * (brick.width + brick.padding)) + this.offsetLeft;
+          brick.y = (r * (brick.height + brick.padding)) + this.offsetTop;
           
           if (
-              this.x + this.ballRadius > brick.x 
-              && this.x - this.ballRadius < brick.x + this.brickWidth 
-              && this.y + this.ballRadius > brick.y 
-              && this.y - this.ballRadius < brick.y + this.brickHeight
+              ballRight > brick.x 
+              && ballLeft < brick.x + brick.width 
+              && ballBottom > brick.y 
+              && ballTop < brick.y + brick.height
             ) {
-            this.dy = -this.dy;
-            brick.status = 0;
+            brick.active = 0;
+            this.brickCount--;
+            this.collision = true;
           }
 
           ctx.beginPath();
-          ctx.rect(brick.x, brick.y, this.brickWidth, this.brickHeight);
-          ctx.fillStyle = this.bricksColor;
+          ctx.rect(brick.x, brick.y, brick.width, brick.height);
+          ctx.fillStyle = brick.color;
           ctx.fill();
           ctx.closePath();
         }
       }
     }
+
+    return false;
   }
-  
-  drawBackground() {
+}
+
+class Background {
+  backgroundColor = "#000";
+
+  render() {
     ctx.beginPath();
     ctx.rect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = this.backgroundColor;
     ctx.fill();
     ctx.closePath();
   }
+}
 
-  drawOver() {
+class Message {
+  textColor = "#fff";
+
+  render(message) {
     ctx.font = "16px Monospace";
     ctx.fillStyle = this.textColor;
     ctx.textAlign = "center";
-    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+    ctx.fillText(message, canvas.width / 2, canvas.height / 2);
   }
+}
+
+class Game {
+  wallOfBricks = new WallOfBricks();
+  ball = new Ball();
+  paddle = new Paddle();
+  background = new Background();
+  message = new Message();
+  over = false;
+  end = false;
+  leftPressed = false;
+  rightPressed = false;
   
+  // it has flow
   render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    this.drawBackground();
-    this.drawBricks();
-    this.drawBall();
-    this.drawPaddle();
-  
-    if (this.x - this.ballRadius < 0 || this.x + this.ballRadius > canvas.width) {
-      this.dx = -this.dx;
+
+    this.background.render();
+    this.wallOfBricks.render(this.ball.left, this.ball.right, this.ball.top, this.ball.bottom);
+
+    if (this.wallOfBricks.collision) {
+      this.ball.dy = -this.ball.dy;
+      this.wallOfBricks.collision = false;
     }
 
-    if (this.y - this.ballRadius < 0) {
-      this.dy = -this.dy;
-    } 
+    this.ball.render(this.paddle.x, this.paddle.x + this.paddle.width);
+    this.paddle.render(this.leftPressed, this.rightPressed);
     
-    if (this.y + this.ballRadius > canvas.height) {
-      if (this.x + this.ballRadius > this.paddleX && this.x - this.ballRadius < this.paddleX + this.paddleWidth) {
-        this.dy = -this.dy;
-      } else {
-        this.over = true;
-        this.drawOver();
-      }
-    }
-  
-    if (this.rightPressed && this.paddleX < canvas.width - this.paddleWidth) {
-      this.paddleX += 7;
-    } else if (this.leftPressed && this.paddleX > 0) {
-      this.paddleX -= 7;
-    }
-  
-    this.x += this.dx;
-    this.y += this.dy;
-
-    if (!this.over)
+    if (this.ball.outOfPaddle) {
+      this.message.render("GAME OVER");
+    } else if (this.wallOfBricks.brickCount < 1)  {
+      this.message.render("YOU WIN!");
+    } else {
       requestAnimationFrame(() => this.render());
+    }
   }
 
   keyDownHandler(e) {
