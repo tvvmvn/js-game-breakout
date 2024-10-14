@@ -1,6 +1,7 @@
 var canvas = document.getElementById("myCanvas");
 canvas.width = 500;
 canvas.height = 300;
+canvas.style.backgroundColor = "#000";
 var ctx = canvas.getContext("2d");
 
 class Ball {
@@ -14,9 +15,18 @@ class Ball {
   dx = 3;
   dy = -3;
   color = "#f1f1f1";
-  outOfPaddle = false;
+
+  outOfPaddle(paddleLeft, paddleRight) {
+    if (this.bottom > canvas.height) {
+      if (this.left > paddleRight || this.right < paddleLeft) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
   
-  render(paddleLeft, paddleRight) {
+  draw() {
     this.left = this.x - this.radius;
     this.right = this.x + this.radius;
     this.top = this.y - this.radius;
@@ -26,17 +36,9 @@ class Ball {
       this.dx = -this.dx;
     }
   
-    if (this.top < 0) {
+    if (this.top < 0 || this.bottom > canvas.height) {
       this.dy = -this.dy;
     } 
-    
-    if (this.bottom > canvas.height) {
-      if (this.left < paddleRight && this.right > paddleLeft) {
-        this.dy = -this.dy;
-      } else {
-        this.outOfPaddle = true;
-      }
-    }
   
     this.x += this.dx;
     this.y += this.dy;
@@ -55,7 +57,7 @@ class Paddle {
   x = (canvas.width - this.width) / 2;
   color = "#ddd";
 
-  render(leftPressed, rightPressed) {
+  draw(leftPressed, rightPressed) {
     if (rightPressed && this.x < canvas.width - this.width) {
       this.x += 7;
     } else if (leftPressed && this.x > 0) {
@@ -78,6 +80,11 @@ class Brick {
   color = "pink";
   padding = 10;
   active = 1;
+
+  constructor(r, c, offsetLeft, offsetTop) {
+    this.x = (c * (this.width + this.padding)) + offsetLeft;
+    this.y = (r * (this.height + this.padding)) + offsetTop;
+  }
 }
 
 class WallOfBricks {
@@ -87,27 +94,23 @@ class WallOfBricks {
   columnCount = 5;
   bricks = [];
   brickCount = this.rowCount * this.columnCount;
-  collision = false;
 
   constructor() {
     for (var r = 0; r < this.rowCount; r++) {
       this.bricks[r] = [];
 
       for (var c = 0; c < this.columnCount; c++) {
-        this.bricks[r][c] = new Brick();
+        this.bricks[r][c] = new Brick(r, c, this.offsetLeft, this.offsetTop);
       }
     }
   }
 
-  render(ballLeft, ballRight, ballTop, ballBottom) {
+  collisionDetection(ballLeft, ballRight, ballTop, ballBottom) {
     for (var r = 0; r < this.rowCount; r++) {
       for (var c = 0; c < this.columnCount; c++) {
         var brick = this.bricks[r][c];
 
         if (brick.active == 1) {
-          brick.x = (c * (brick.width + brick.padding)) + this.offsetLeft;
-          brick.y = (r * (brick.height + brick.padding)) + this.offsetTop;
-          
           if (
               ballRight > brick.x 
               && ballLeft < brick.x + brick.width 
@@ -115,10 +118,22 @@ class WallOfBricks {
               && ballTop < brick.y + brick.height
             ) {
             brick.active = 0;
-            this.brickCount--;
-            this.collision = true;
-          }
 
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  draw() {
+    for (var r = 0; r < this.rowCount; r++) {
+      for (var c = 0; c < this.columnCount; c++) {
+        var brick = this.bricks[r][c];
+
+        if (brick.active == 1) {
           ctx.beginPath();
           ctx.rect(brick.x, brick.y, brick.width, brick.height);
           ctx.fillStyle = brick.color;
@@ -127,27 +142,13 @@ class WallOfBricks {
         }
       }
     }
-
-    return false;
-  }
-}
-
-class Background {
-  backgroundColor = "#000";
-
-  render() {
-    ctx.beginPath();
-    ctx.rect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = this.backgroundColor;
-    ctx.fill();
-    ctx.closePath();
   }
 }
 
 class Message {
   textColor = "#fff";
 
-  render(message) {
+  draw(message) {
     ctx.font = "16px Monospace";
     ctx.fillStyle = this.textColor;
     ctx.textAlign = "center";
@@ -159,32 +160,32 @@ class Game {
   wallOfBricks = new WallOfBricks();
   ball = new Ball();
   paddle = new Paddle();
-  background = new Background();
   message = new Message();
   over = false;
   end = false;
   leftPressed = false;
   rightPressed = false;
+
+  clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
   
   // it has flow
   render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    this.clearCanvas();
+    this.wallOfBricks.draw();
+    this.ball.draw();
+    this.paddle.draw(this.leftPressed, this.rightPressed);
 
-    this.background.render();
-    this.wallOfBricks.render(this.ball.left, this.ball.right, this.ball.top, this.ball.bottom);
-
-    if (this.wallOfBricks.collision) {
+    if (this.wallOfBricks.collisionDetection(this.ball.left, this.ball.right, this.ball.top, this.ball.bottom)) {
       this.ball.dy = -this.ball.dy;
-      this.wallOfBricks.collision = false;
+      this.wallOfBricks.brickCount--;
     }
-
-    this.ball.render(this.paddle.x, this.paddle.x + this.paddle.width);
-    this.paddle.render(this.leftPressed, this.rightPressed);
     
-    if (this.ball.outOfPaddle) {
-      this.message.render("GAME OVER");
+    if (this.ball.outOfPaddle(this.paddle.x, this.paddle.x + this.paddle.width)) {
+      this.message.draw("GAME OVER");
     } else if (this.wallOfBricks.brickCount < 1)  {
-      this.message.render("YOU WIN!");
+      this.message.draw("YOU WIN!");
     } else {
       requestAnimationFrame(() => this.render());
     }
