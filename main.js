@@ -16,6 +16,14 @@ class Ball {
   bottom = 0;
   color = "#f1f1f1";
 
+  updateDx() {
+    this.dx = -this.dx;
+  }
+
+  updateDy() {
+    this.dy = -this.dy;
+  }
+
   outOfPaddle(paddleLeft, paddleRight) {
     if (this.bottom > canvas.height) {
       if (this.right < paddleLeft || this.left > paddleRight) {
@@ -33,9 +41,9 @@ class Ball {
     this.bottom = this.y + this.radius;
 
     if (this.left < 0 || this.right > canvas.width) {
-      this.dx = -this.dx;
+      this.updateDx();
     } else if (this.top < 0 || this.bottom > canvas.height) {
-      this.dy = -this.dy;
+      this.updateDy();
     } 
 
     this.x += this.dx;
@@ -55,11 +63,13 @@ class Paddle {
   x = (canvas.width - this.width) / 2;
   color = "#ddd";
 
-  draw(move) {
-    var x = this.x += move;
+  setX(n) {
+    this.x += n;
+  }
 
+  draw() {
     ctx.beginPath();
-    ctx.rect(x, canvas.height - this.height, this.width, this.height);
+    ctx.rect(this.x, canvas.height - this.height, this.width, this.height);
     ctx.fillStyle = this.color;
     ctx.fill();
     ctx.closePath();
@@ -172,7 +182,7 @@ class Game {
 
     // Wall of bricks
     if (this.wallOfBricks.collisionDetection(this.ball.left, this.ball.right, this.ball.top, this.ball.bottom)) {
-      this.ball.dy = -this.ball.dy;
+      this.ball.updateDy();
       this.wallOfBricks.brickCount--;
       
       if (this.wallOfBricks.brickCount < 1)  {
@@ -193,12 +203,12 @@ class Game {
 
     // Paddle
     if (this.rightPressed && this.paddle.x + this.paddle.width < canvas.width) {
-      this.paddle.draw(5);
+      this.paddle.setX(5);
     } else if (this.leftPressed && this.paddle.x > 0) {
-      this.paddle.draw(-5);
-    } else {
-      this.paddle.draw(0);
-    }
+      this.paddle.setX(-5);
+    } 
+
+    this.paddle.draw();
   }
 
   keyHandler(key, pressed) {
