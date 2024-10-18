@@ -191,25 +191,25 @@ class Game {
     }
   }
 
-  keyDownHandler(e) {
-    if (e.keyCode == 39) {
-      this.rightPressed = true;
-    } else if (e.keyCode == 37) {
-      this.leftPressed = true;
-    }
-  }
-  
-  keyUpHandler(e) {
-    if (e.keyCode == 39) {
-      this.rightPressed = false;
-    } else if (e.keyCode == 37) {
-      this.leftPressed = false;
+  keyHandler(key, pressed) {
+    if (key == "ArrowLeft") {
+      if (pressed) {
+        this.leftPressed = true;
+      } else {
+        this.leftPressed = false;
+      }
+    } else if (key == "ArrowRight") {
+      if (pressed) {
+        this.rightPressed = true;
+      } else {
+        this.rightPressed = false;
+      }
     }
   }
 }
 
 var game = new Game();
-document.addEventListener("keydown", (e) => game.keyDownHandler(e));
-document.addEventListener("keyup", (e) => game.keyUpHandler(e));
+document.addEventListener("keydown", (e) => game.keyHandler(e.key, true));
+document.addEventListener("keyup", (e) => game.keyHandler(e.key, false));
 
 game.render();
