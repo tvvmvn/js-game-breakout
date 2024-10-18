@@ -12,13 +12,14 @@ class Ball {
   right = 0;
   top = 0;
   bottom = 0;
-  dx = 2;
-  dy = -2;
   color = "#f1f1f1";
   
-  draw() {
+  draw(dx, dy) {  
+    var x = this.x += dx;
+    var y = this.y += dy;
+
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.arc(x, y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
     ctx.fill();
     ctx.closePath();
@@ -31,9 +32,11 @@ class Paddle {
   x = (canvas.width - this.width) / 2;
   color = "#ddd";
 
-  draw() {
+  draw(move) {
+    var x = this.x += move;
+
     ctx.beginPath();
-    ctx.rect(this.x, canvas.height - this.height, this.width, this.height);
+    ctx.rect(x, canvas.height - this.height, this.width, this.height);
     ctx.fillStyle = this.color;
     ctx.fill();
     ctx.closePath();
@@ -124,6 +127,8 @@ class Message {
 }
 
 class Game {
+  dx = 2;
+  dy = -2;
   wallOfBricks = new WallOfBricks();
   ball = new Ball();
   paddle = new Paddle();
@@ -145,13 +150,10 @@ class Game {
   // it has flow
   actionPerformed() {
     this.clearCanvas();
-    this.wallOfBricks.draw();
-    this.ball.draw();
-    this.paddle.draw();
 
     // Wall of bricks
     if (this.wallOfBricks.collisionDetection(this.ball.left, this.ball.right, this.ball.top, this.ball.bottom)) {
-      this.ball.dy = -this.ball.dy;
+      this.dy = -this.dy;
       this.wallOfBricks.brickCount--;
       
       if (this.wallOfBricks.brickCount < 1)  {
@@ -160,6 +162,8 @@ class Game {
       } 
     }
 
+    this.wallOfBricks.draw();
+
     // Ball
     this.ball.left = this.ball.x - this.ball.radius;
     this.ball.right = this.ball.x + this.ball.radius;
@@ -167,30 +171,27 @@ class Game {
     this.ball.bottom = this.ball.y + this.ball.radius;
 
     if (this.ball.left < 0 || this.ball.right > canvas.width) {
-      this.ball.dx = -this.ball.dx;
-    } 
-    
-    if (this.ball.top < 0) {
-      this.ball.dy = -this.ball.dy;
-    } 
-    
-    if (this.ball.bottom > canvas.height - this.paddle.height) {
+      this.dx = -this.dx;
+    } else if (this.ball.top < 0) {
+      this.dy = -this.dy;
+    } else if (this.ball.bottom > canvas.height - this.paddle.height) {
       if (this.ball.right > this.paddle.x && this.ball.left < this.paddle.x + this.paddle.width) {
-        this.ball.dy = -this.ball.dy;
+        this.dy = -this.dy;
       } else {
         this.message.draw("GAME OVER");
         clearInterval(this.timer);
       }
     }
-  
-    this.ball.x += this.ball.dx;
-    this.ball.y += this.ball.dy;
+
+    this.ball.draw(this.dx, this.dy);
 
     // Paddle
     if (this.rightPressed && this.paddle.x + this.paddle.width < canvas.width) {
-      this.paddle.x += 5;
+      this.paddle.draw(5);
     } else if (this.leftPressed && this.paddle.x > 0) {
-      this.paddle.x -= 5;
+      this.paddle.draw(-5);
+    } else {
+      this.paddle.draw(0);
     }
   }
 
