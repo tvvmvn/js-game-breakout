@@ -33,8 +33,8 @@ class Ball {
 
     return false;
   }
-  
-  draw() {  
+
+  render() {  
     this.left = this.x - this.radius;
     this.right = this.x + this.radius;
     this.top = this.y - this.radius;
@@ -67,7 +67,7 @@ class Paddle {
     this.x += n;
   }
 
-  draw() {
+  render() {
     ctx.beginPath();
     ctx.rect(this.x, canvas.height - this.height, this.width, this.height);
     ctx.fillStyle = this.color;
@@ -83,75 +83,39 @@ class Brick {
   height = 20;
   color = "pink";
   padding = 10;
-  active = 1;
-}
+  active = true;
 
-class WallOfBricks {
-  offsetTop = 30;
-  offsetLeft = 30;
-  rowCount = 4;
-  columnCount = 5;
-  bricks = [];
-  brickCount = this.rowCount * this.columnCount;
-
-  constructor() {
-    for (var r = 0; r < this.rowCount; r++) {
-      this.bricks[r] = [];
-
-      for (var c = 0; c < this.columnCount; c++) {
-        this.bricks[r][c] = new Brick();
-        var brick = this.bricks[r][c];
-        
-        brick.x = (c * (brick.width + brick.padding)) + this.offsetLeft;
-        brick.y = (r * (brick.height + brick.padding)) + this.offsetTop;
-      }
-    }
+  constructor(offsetLeft, offsetTop, r, c) {
+    this.x = offsetLeft + (c * (this.width + this.padding));
+    this.y = offsetTop + (r * (this.height + this.padding));
   }
 
-  collisionDetection(ballLeft, ballRight, ballTop, ballBottom) {
-    for (var r = 0; r < this.rowCount; r++) {
-      for (var c = 0; c < this.columnCount; c++) {
-        var brick = this.bricks[r][c];
-
-        if (brick.active == 1) {
-          if (
-              ballRight > brick.x 
-              && ballLeft < brick.x + brick.width 
-              && ballBottom > brick.y 
-              && ballTop < brick.y + brick.height
-            ) {
-            brick.active = 0;
-
-            return true;
-          }
-        }
-      }
+  collisionDetection(ball) {
+    if (
+      ball.right > this.x
+      && ball.left < this.x + this.width
+      && ball.bottom > this.y
+      && ball.top < this.y + this.height
+    ) {
+      return true;
     }
 
     return false;
   }
 
-  draw() {
-    for (var r = 0; r < this.rowCount; r++) {
-      for (var c = 0; c < this.columnCount; c++) {
-        var brick = this.bricks[r][c];
-
-        if (brick.active == 1) {
-          ctx.beginPath();
-          ctx.rect(brick.x, brick.y, brick.width, brick.height);
-          ctx.fillStyle = brick.color;
-          ctx.fill();
-          ctx.closePath();
-        }
-      }
-    }
+  render() {
+    ctx.beginPath();
+    ctx.rect(this.x, this.y, this.width, this.height);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.closePath();
   }
 }
 
 class Message {
   textColor = "#fff";
 
-  draw(message) {
+  render(message) {
     ctx.font = "16px Monospace";
     ctx.fillStyle = this.textColor;
     ctx.textAlign = "center";
@@ -160,46 +124,67 @@ class Message {
 }
 
 class Game {
-  wallOfBricks = new WallOfBricks();
+  offsetTop = 30;
+  offsetLeft = 30;
+  rowCount = 4;
+  columnCount = 5;
+  bricks = [];
   ball = new Ball();
   paddle = new Paddle();
   message = new Message();
+  score = 0;
   leftPressed = false;
   rightPressed = false;
   timer;
 
   constructor() {
     this.timer = setInterval(() => this.actionPerformed(), 10);
+
+    // initialize bricks
+    for (var r = 0; r < this.rowCount; r++) {
+      this.bricks[r] = [];
+      for (var c = 0; c < this.columnCount; c++) {
+        this.bricks[r][c] = new Brick(this.offsetLeft, this.offsetTop, r, c);
+      }
+    }
   }
 
-  clearCanvas() {
+  clearScreen() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   
-  // it has flow
   actionPerformed() {
-    this.clearCanvas();
+    this.clearScreen();
 
-    // Wall of bricks
-    if (this.wallOfBricks.collisionDetection(this.ball.left, this.ball.right, this.ball.top, this.ball.bottom)) {
-      this.ball.updateDy();
-      this.wallOfBricks.brickCount--;
-      
-      if (this.wallOfBricks.brickCount < 1)  {
-        this.message.draw("YOU WIN!");
-        clearInterval(this.timer);
-      } 
+    // Bricks
+    for (var r = 0; r < this.rowCount; r++) {
+      for (var c = 0; c < this.columnCount; c++) {
+        var brick = this.bricks[r][c];
+
+        if (brick.active) {
+          if (brick.collisionDetection(this.ball)) {
+            brick.active = false;
+            this.score++;
+            this.ball.updateDy();
+            
+            if (this.score == this.rowCount * this.columnCount) {
+              this.message.render("YOU WIN!");
+              clearInterval(this.timer);
+            }
+          }
+          
+          brick.render();
+        }
+      }
     }
-
-    this.wallOfBricks.draw();
 
     // Ball
-    this.ball.draw();
-
     if (this.ball.outOfPaddle(this.paddle.x, this.paddle.x + this.paddle.width)) {
-      this.message.draw("GAME OVER");
+      this.message.render("GAME OVER");
       clearInterval(this.timer);
     }
+
+    this.ball.render();
 
     // Paddle
     if (this.rightPressed && this.paddle.x + this.paddle.width < canvas.width) {
@@ -208,7 +193,7 @@ class Game {
       this.paddle.setX(-5);
     } 
 
-    this.paddle.draw();
+    this.paddle.render();
   }
 
   keyHandler(key, pressed) {

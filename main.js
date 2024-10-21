@@ -33,22 +33,24 @@ class Ball {
 
     return false;
   }
-  
-  render() {  
+
+  setCrds() {
     this.left = this.x - this.radius;
     this.right = this.x + this.radius;
     this.top = this.y - this.radius;
     this.bottom = this.y + this.radius;
-
+  
     if (this.left < 0 || this.right > canvas.width) {
       this.updateDx();
     } else if (this.top < 0 || this.bottom > canvas.height) {
       this.updateDy();
     } 
-
+  
     this.x += this.dx;
     this.y += this.dy;
+  }
 
+  render() {  
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
@@ -178,14 +180,14 @@ class Game {
       }
     }
 
-    // Ball
+    // Ball    
+    this.ball.render();
+    this.ball.setCrds();
+    
     if (this.ball.outOfPaddle(this.paddle.x, this.paddle.x + this.paddle.width)) {
       this.message.render("GAME OVER");
       clearInterval(this.timer);
     }
-
-    this.ball.render();
-
     // Paddle
     if (this.rightPressed && this.paddle.x + this.paddle.width < canvas.width) {
       this.paddle.setX(5);
